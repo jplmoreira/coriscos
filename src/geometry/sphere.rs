@@ -1,13 +1,10 @@
-use std::sync::Arc;
-
 use crate::{
-    component::{
-        ray::Ray,
-        world::{HitRecord, Hittable},
-    },
-    material::MaterialRef,
+    component::ray::Ray,
+    material::{MaterialRef, ScatterResult},
     math::Vector3,
 };
+
+use super::{HitRecord, Hittable, HittableRef};
 
 pub struct Sphere {
     center: Vector3,
@@ -16,17 +13,19 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(center: Vector3, radius: f64, material: MaterialRef) -> Self {
-        Self {
+    pub fn new(center: Vector3, radius: f64, material: MaterialRef) -> HittableRef {
+        Box::new(Self {
             center,
             radius,
             material,
-        }
+        })
     }
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, idx: usize) -> Option<HitRecord> {
+        let t_min = 0.001;
+        let t_max = f64::INFINITY;
         let oc = ray.origin() - self.center;
         let a = ray.direction().quadrance();
         let half_b = oc.dot(&ray.direction());
@@ -46,13 +45,18 @@ impl Hittable for Sphere {
         let point = ray.at(root);
         let normal = (point - self.center) / self.radius;
         let front = ray.direction().dot(&normal) < 0.0;
-        Some(HitRecord::new(
+        Some(HitRecord {
             point,
-            if front { normal } else { -normal },
-            root,
+            normal: if front { normal } else { -normal },
+            direction: ray.direction(),
+            t: root,
             front,
-            Arc::clone(&self.material),
-        ))
+            idx,
+        })
+    }
+
+    fn scatter(&self, record: HitRecord) -> ScatterResult {
+        self.material.scatter(record)
     }
 }
 

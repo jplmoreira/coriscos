@@ -2,11 +2,7 @@ use rayon::prelude::*;
 
 use crate::math::Vector3;
 
-use super::{
-    camera::Camera,
-    ray::Ray,
-    world::{Hittable, World},
-};
+use super::{camera::Camera, ray::Ray, world::World};
 
 pub struct Caster {
     world: World,
@@ -53,13 +49,8 @@ impl Caster {
             return Vector3::new(0.0, 0.0, 0.0);
         }
 
-        if let Some(record) = self.world.hit(&ray, 0.001, f64::INFINITY) {
-            match record.material.scatter(&ray, &record) {
-                Some((scattered, attenuation)) => {
-                    return attenuation * self.cast(scattered, depth - 1);
-                }
-                None => return Vector3::new(0.0, 0.0, 0.0),
-            }
+        if let Some(scatter) = self.world.find_hit(&ray) {
+            return scatter.attenuation * self.cast(scatter.ray, depth - 1);
         }
 
         let unit_dir = ray.direction().normalize();

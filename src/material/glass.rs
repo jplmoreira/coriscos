@@ -1,19 +1,16 @@
 use rand::Rng;
 
-use crate::{
-    component::{ray::Ray, world::HitRecord},
-    math::Vector3,
-};
+use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
 
-use super::Material;
+use super::{Material, MaterialRef, ScatterResult};
 
 pub struct Glass {
     refraction_index: f64,
 }
 
 impl Glass {
-    pub fn new(refraction_index: f64) -> Self {
-        Self { refraction_index }
+    pub fn new(refraction_index: f64) -> MaterialRef {
+        Box::new(Self { refraction_index })
     }
 
     fn reflectance(cosine: f64, refraction_index: f64) -> f64 {
@@ -24,13 +21,13 @@ impl Glass {
 }
 
 impl Material for Glass {
-    fn scatter(&self, ray: &Ray, record: &HitRecord) -> Option<(Ray, Vector3)> {
+    fn scatter(&self, record: HitRecord) -> ScatterResult {
         let refraction_ratio = if record.front {
             1.0 / self.refraction_index
         } else {
             self.refraction_index
         };
-        let unit_direction = ray.direction().normalize();
+        let unit_direction = record.direction.normalize();
         let cos_theta = (-unit_direction).dot(&record.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
@@ -42,9 +39,10 @@ impl Material for Glass {
         } else {
             unit_direction.refract(&record.normal, refraction_ratio, cos_theta)
         };
-        Some((
-            Ray::new(record.point, direction),
-            Vector3::new(1.0, 1.0, 1.0),
-        ))
+        ScatterResult {
+            t: record.t,
+            ray: Ray::new(record.point, direction),
+            attenuation: Vector3::new(1.0, 1.0, 1.0),
+        }
     }
 }

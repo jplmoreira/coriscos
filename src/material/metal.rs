@@ -1,9 +1,6 @@
-use crate::{
-    component::{ray::Ray, world::HitRecord},
-    math::Vector3,
-};
+use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
 
-use super::Material;
+use super::{Material, MaterialRef, ScatterResult};
 
 pub struct Metal {
     albedo: Vector3,
@@ -11,19 +8,23 @@ pub struct Metal {
 }
 
 impl Metal {
-    pub fn new(albedo: Vector3, fuzz: f64) -> Metal {
-        Metal {
+    pub fn new(albedo: Vector3, fuzz: f64) -> MaterialRef {
+        Box::new(Self {
             albedo,
             fuzz: fuzz.clamp(0.0, 1.0),
-        }
+        })
     }
 }
 
 impl Material for Metal {
-    fn scatter(&self, ray: &Ray, record: &HitRecord) -> Option<(Ray, Vector3)> {
-        let reflected = ray.direction().normalize().reflect(&record.normal);
+    fn scatter(&self, record: HitRecord) -> ScatterResult {
+        let reflected = record.direction.normalize().reflect(&record.normal);
 
         let scattered = Ray::new(record.point, reflected + self.fuzz * Vector3::random_unit());
-        Some((scattered, self.albedo.clone()))
+        ScatterResult {
+            t: record.t,
+            ray: scattered,
+            attenuation: self.albedo.clone(),
+        }
     }
 }
