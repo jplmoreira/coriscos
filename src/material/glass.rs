@@ -21,7 +21,7 @@ impl Glass {
 }
 
 impl Material for Glass {
-    fn scatter(&self, record: HitRecord) -> ScatterResult {
+    fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
         let refraction_ratio = if record.front {
             1.0 / self.refraction_index
         } else {
@@ -39,10 +39,10 @@ impl Material for Glass {
         } else {
             unit_direction.refract(&record.normal, refraction_ratio, cos_theta)
         };
-        ScatterResult {
+        Some(ScatterResult {
             t: record.t,
             ray: Ray::new(record.point, direction),
             attenuation: Vector3::new(1.0, 1.0, 1.0),
-        }
+        })
     }
 }

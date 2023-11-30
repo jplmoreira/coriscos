@@ -17,14 +17,14 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, record: HitRecord) -> ScatterResult {
+    fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
         let reflected = record.direction.normalize().reflect(&record.normal);
 
         let scattered = Ray::new(record.point, reflected + self.fuzz * Vector3::random_unit());
-        ScatterResult {
+        Some(ScatterResult {
             t: record.t,
             ray: scattered,
             attenuation: self.albedo.clone(),
-        }
+        })
     }
 }

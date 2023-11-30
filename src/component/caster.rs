@@ -7,6 +7,7 @@ use super::{camera::Camera, ray::Ray, world::World};
 pub struct Caster {
     world: World,
     camera: Camera,
+    background: Vector3,
     pixel_samples: u32,
     max_depth: u32,
 }
@@ -16,9 +17,10 @@ impl Caster {
         let look_from = Vector3::new(13.0, 2.0, 3.0);
         let look_at = Vector3::new(0.0, 0.0, 0.0);
         let vup = Vector3::new(0.0, 1.0, 0.0);
+        let background = Vector3::new(0.0, 0.0, 0.0);
 
         let aspect_ratio = 16.0 / 9.0;
-        let image_width = 400;
+        let image_width = 1200;
         let vfov = 20.0;
         let defocus_angle = 0.6;
         let focus_distance = 10.0;
@@ -39,6 +41,7 @@ impl Caster {
         Self {
             world,
             camera,
+            background,
             pixel_samples,
             max_depth,
         }
@@ -49,13 +52,18 @@ impl Caster {
             return Vector3::new(0.0, 0.0, 0.0);
         }
 
-        if let Some(scatter) = self.world.find_hit(&ray) {
-            return scatter.attenuation * self.cast(scatter.ray, depth - 1);
+        if let Some(hit) = self.world.find_hit(&ray) {
+            let emission_color = self.world.object(hit.idx).material().emit(&hit);
+
+            if let Some(scattered) = self.world.object(hit.idx).material().scatter(&hit) {
+                let scatter_color = scattered.attenuation * self.cast(scattered.ray, depth - 1);
+                return emission_color + scatter_color;
+            } else {
+                return emission_color;
+            }
         }
 
-        let unit_dir = ray.direction().normalize();
-        let a = 0.5 * (unit_dir.y() + 1.0);
-        (1.0 - a) * Vector3::new(1.0, 1.0, 1.0) + a * Vector3::new(0.5, 0.7, 1.0)
+        self.background
     }
 
     fn get_sample(&self, buf_idx: u32) -> Vector3 {

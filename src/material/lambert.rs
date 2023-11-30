@@ -13,17 +13,17 @@ impl Lambert {
 }
 
 impl Material for Lambert {
-    fn scatter(&self, record: HitRecord) -> ScatterResult {
+    fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
         let mut scatter_direction = record.normal + Vector3::random_unit();
         if scatter_direction.near_zero() {
             scatter_direction = record.normal;
         }
 
         let scattered = Ray::new(record.point, scatter_direction);
-        ScatterResult {
+        Some(ScatterResult {
             t: record.t,
             ray: scattered,
             attenuation: self.albedo.clone(),
-        }
+        })
     }
 }

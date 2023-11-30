@@ -1,4 +1,4 @@
-use crate::{component::ray::Ray, material::ScatterResult, math::Vector3};
+use crate::{component::ray::Ray, material::MaterialRef, math::Vector3};
 
 pub mod sphere;
 
@@ -13,7 +13,7 @@ pub struct HitRecord {
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, idx: usize) -> Option<HitRecord>;
-    fn scatter(&self, record: HitRecord) -> ScatterResult;
+    fn material(&self) -> &MaterialRef;
 }
 
 pub type HittableRef = Box<dyn Hittable + Send + Sync>;

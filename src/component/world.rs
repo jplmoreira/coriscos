@@ -1,6 +1,8 @@
 use crate::{
-    geometry::{sphere::Sphere, HittableRef},
-    material::{glass::Glass, lambert::Lambert, metal::Metal, MaterialRef, ScatterResult},
+    geometry::{sphere::Sphere, HitRecord, HittableRef},
+    material::{
+        diffuse_light::DiffuseLight, glass::Glass, lambert::Lambert, metal::Metal, MaterialRef,
+    },
     math::{self, Vector3},
 };
 
@@ -49,15 +51,23 @@ impl World {
         let material1: MaterialRef = Glass::new(1.5);
         let material2: MaterialRef = Lambert::new(Vector3::new(0.4, 0.2, 0.1));
         let material3: MaterialRef = Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0);
+        let light1: MaterialRef = DiffuseLight::new(Vector3::new(4.0, 4.0, 4.0));
+        let light2: MaterialRef = DiffuseLight::new(Vector3::new(4.0, 4.0, 4.0));
 
         objects.push(Sphere::new(Vector3::new(0.0, 1.0, 0.0), 1.0, material1));
         objects.push(Sphere::new(Vector3::new(-4.0, 1.0, 0.0), 1.0, material2));
         objects.push(Sphere::new(Vector3::new(4.0, 1.0, 0.0), 1.0, material3));
+        objects.push(Sphere::new(Vector3::new(0.0, 1.0, 2.0), 0.5, light1));
+        objects.push(Sphere::new(Vector3::new(0.0, 1.0, -2.0), 0.5, light2));
 
         Self { objects }
     }
 
-    pub fn find_hit(&self, ray: &Ray) -> Option<ScatterResult> {
+    pub fn object(&self, idx: usize) -> &HittableRef {
+        &self.objects[idx]
+    }
+
+    pub fn find_hit(&self, ray: &Ray) -> Option<HitRecord> {
         // let hit = self
         //     .objects
         //     .iter()
@@ -79,10 +89,7 @@ impl World {
                 }
             }
         }
-        if let Some(res) = hit {
-            Some(self.objects[res.idx].scatter(res))
-        } else {
-            None
-        }
+
+        hit
     }
 }

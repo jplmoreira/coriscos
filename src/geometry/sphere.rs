@@ -1,8 +1,4 @@
-use crate::{
-    component::ray::Ray,
-    material::{MaterialRef, ScatterResult},
-    math::Vector3,
-};
+use crate::{component::ray::Ray, material::MaterialRef, math::Vector3};
 
 use super::{HitRecord, Hittable, HittableRef};
 
@@ -55,8 +51,8 @@ impl Hittable for Sphere {
         })
     }
 
-    fn scatter(&self, record: HitRecord) -> ScatterResult {
-        self.material.scatter(record)
+    fn material(&self) -> &MaterialRef {
+        &self.material
     }
 }
 

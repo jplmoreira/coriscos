@@ -8,8 +8,8 @@ mod material;
 mod math;
 
 fn main() {
-    let pixel_samples = 10;
-    let max_depth = 10;
+    let pixel_samples = 1000;
+    let max_depth = 50;
 
     let caster = Caster::build(pixel_samples, max_depth);
 
