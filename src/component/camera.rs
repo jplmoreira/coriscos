@@ -83,9 +83,9 @@ impl Camera {
     }
 
     fn pixel_sample_rand(&self) -> Vector3 {
-        let mut rng = rand::thread_rng();
-        let px = -0.5 + rng.gen::<f64>();
-        let py = -0.5 + rng.gen::<f64>();
+        let mut rng = rand::rng();
+        let px = -0.5 + rng.random::<f64>();
+        let py = -0.5 + rng.random::<f64>();
         self.pixel_delta_u
             .extend(px)
             .add(&self.pixel_delta_v.extend(py))

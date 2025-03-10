@@ -8,14 +8,18 @@ mod material;
 mod math;
 
 fn main() {
-    let pixel_samples = 1000;
-    let max_depth = 50;
+    let pixel_samples = 2000;
+    let max_depth = 100;
 
-    let caster = Caster::build(pixel_samples, max_depth);
+    println!("start time - {:?}", chrono::offset::Local::now());
 
     let now = Instant::now();
+    let caster = Caster::build(pixel_samples, max_depth);
 
+    println!("build - {}s", now.elapsed().as_millis());
+
+    let now = Instant::now();
     caster.run("image.png");
 
-    println!("{}s", now.elapsed().as_secs());
+    println!("run - {}s", now.elapsed().as_secs());
 }

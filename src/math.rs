@@ -1,13 +1,13 @@
 use rand::Rng;
 
 pub fn rand_f64() -> f64 {
-    let mut rng = rand::thread_rng();
-    rng.gen()
+    let mut rng = rand::rng();
+    rng.random()
 }
 
 pub fn rand_range_f64(min: f64, max: f64) -> f64 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(min..max)
+    let mut rng = rand::rng();
+    rng.random_range(min..max)
 }
 
 #[derive(Clone)]

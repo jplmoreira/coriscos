@@ -1,5 +1,3 @@
-use rayon::prelude::*;
-
 use crate::{
     geometry::{sphere::Sphere, HitRecord, HittableRef},
     material::{diffuse_light::DiffuseLight, glass::Glass, lambert::Lambert, metal::Metal},

@@ -31,9 +31,9 @@ impl Material for Glass {
         let cos_theta = unit_direction.neg().dot(&record.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let direction = if refraction_ratio * sin_theta > 1.0
-            || Self::reflectance(cos_theta, refraction_ratio) > rng.gen::<f64>()
+            || Self::reflectance(cos_theta, refraction_ratio) > rng.random::<f64>()
         {
             unit_direction.reflect(&record.normal)
         } else {

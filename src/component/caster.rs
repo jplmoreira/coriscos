@@ -20,7 +20,7 @@ impl Caster {
         let background = Vector3::new(0.0, 0.0, 0.0);
 
         let aspect_ratio = 16.0 / 9.0;
-        let image_width = 1200;
+        let image_width = 1920;
         let vfov = 20.0;
         let defocus_angle = 0.6;
         let focus_distance = 10.0;
