@@ -53,17 +53,19 @@ impl Caster {
         }
 
         if let Some(hit) = self.world.find_hit(&ray) {
-            let emission_color = self.world.object(hit.idx).material().emit(&hit);
+            let emission_color = hit.material.emit(&hit);
 
-            if let Some(scattered) = self.world.object(hit.idx).material().scatter(&hit) {
-                let scatter_color = scattered.attenuation * self.cast(scattered.ray, depth - 1);
-                return emission_color + scatter_color;
+            if let Some(scattered) = hit.material.scatter(&hit) {
+                let scatter_color = scattered
+                    .attenuation
+                    .mul(&self.cast(scattered.ray, depth - 1));
+                return emission_color.add(&scatter_color);
             } else {
                 return emission_color;
             }
         }
 
-        self.background
+        self.background.clone()
     }
 
     fn get_sample(&self, buf_idx: u32) -> Vector3 {
@@ -75,8 +77,8 @@ impl Caster {
         let pixel = (0..self.pixel_samples)
             .into_par_iter()
             .map(|_| self.get_sample(buf_idx))
-            .reduce(|| Vector3::new(0.0, 0.0, 0.0), |c1, c2| c1 + c2);
-        let pixel = pixel / self.pixel_samples as f64;
+            .reduce(|| Vector3::new(0.0, 0.0, 0.0), |c1, c2| c1.add(&c2));
+        let pixel = pixel.reduce(self.pixel_samples as f64);
         pixel.to_color()
     }
 

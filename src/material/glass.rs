@@ -2,15 +2,15 @@ use rand::Rng;
 
 use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
 
-use super::{Material, MaterialRef, ScatterResult};
+use super::{Material, ScatterResult};
 
 pub struct Glass {
     refraction_index: f64,
 }
 
 impl Glass {
-    pub fn new(refraction_index: f64) -> MaterialRef {
-        Box::new(Self { refraction_index })
+    pub fn new(refraction_index: f64) -> Self {
+        Self { refraction_index }
     }
 
     fn reflectance(cosine: f64, refraction_index: f64) -> f64 {
@@ -27,8 +27,8 @@ impl Material for Glass {
         } else {
             self.refraction_index
         };
-        let unit_direction = record.direction.normalize();
-        let cos_theta = (-unit_direction).dot(&record.normal).min(1.0);
+        let unit_direction = record.direction.normal();
+        let cos_theta = unit_direction.neg().dot(&record.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let mut rng = rand::thread_rng();
@@ -40,8 +40,8 @@ impl Material for Glass {
             unit_direction.refract(&record.normal, refraction_ratio, cos_theta)
         };
         Some(ScatterResult {
-            t: record.t,
-            ray: Ray::new(record.point, direction),
+            _t: record.t,
+            ray: Ray::new(record.point.clone(), direction),
             attenuation: Vector3::new(1.0, 1.0, 1.0),
         })
     }

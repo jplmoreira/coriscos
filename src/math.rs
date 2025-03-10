@@ -1,5 +1,3 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-
 use rand::Rng;
 
 pub fn rand_f64() -> f64 {
@@ -12,7 +10,7 @@ pub fn rand_range_f64(min: f64, max: f64) -> f64 {
     rng.gen_range(min..max)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Vector3 {
     elems: [f64; 3],
 }
@@ -20,6 +18,72 @@ pub struct Vector3 {
 impl Vector3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { elems: [x, y, z] }
+    }
+
+    pub fn add(&self, rhs: &Self) -> Self {
+        Self {
+            elems: [
+                self.elems[0] + rhs.elems[0],
+                self.elems[1] + rhs.elems[1],
+                self.elems[2] + rhs.elems[2],
+            ],
+        }
+    }
+
+    pub fn _to(&self, rhs: f64) -> Self {
+        Self {
+            elems: [
+                self.elems[0] + rhs,
+                self.elems[1] + rhs,
+                self.elems[2] + rhs,
+            ],
+        }
+    }
+
+    pub fn sub(&self, rhs: &Self) -> Self {
+        Self {
+            elems: [
+                self.elems[0] - rhs.elems[0],
+                self.elems[1] - rhs.elems[1],
+                self.elems[2] - rhs.elems[2],
+            ],
+        }
+    }
+
+    pub fn neg(&self) -> Self {
+        Self {
+            elems: [-self.elems[0], -self.elems[1], -self.elems[2]],
+        }
+    }
+
+    pub fn mul(&self, rhs: &Self) -> Self {
+        Self {
+            elems: [
+                self.elems[0] * rhs.x(),
+                self.elems[1] * rhs.y(),
+                self.elems[2] * rhs.z(),
+            ],
+        }
+    }
+
+    pub fn extend(&self, rhs: f64) -> Self {
+        Self {
+            elems: [
+                self.elems[0] * rhs,
+                self.elems[1] * rhs,
+                self.elems[2] * rhs,
+            ],
+        }
+    }
+
+    pub fn reduce(&self, rhs: f64) -> Self {
+        Self {
+            elems: [
+                self.elems[0] / rhs,
+                self.elems[1] / rhs,
+                self.elems[2] / rhs,
+            ],
+        }
     }
 
     pub fn random(min: f64, max: f64) -> Self {
@@ -44,7 +108,7 @@ impl Vector3 {
     }
 
     pub fn random_unit() -> Self {
-        Self::random_in_region([1.0, 1.0, 1.0]).normalize()
+        Self::random_in_region([1.0, 1.0, 1.0]).normal()
     }
 
     pub fn dot(&self, rhs: &Self) -> f64 {
@@ -62,13 +126,13 @@ impl Vector3 {
     }
 
     pub fn reflect(&self, normal: &Self) -> Self {
-        *self - 2.0 * self.dot(normal) * *normal
+        self.sub(&normal.extend(2.0 * self.dot(normal)))
     }
 
     pub fn refract(&self, normal: &Vector3, eta_over_prime: f64, cos_theta: f64) -> Self {
-        let r_perp = eta_over_prime * (*self + cos_theta * *normal);
-        let r_parallel = -(1.0 - r_perp.quadrance()).abs().sqrt() * *normal;
-        r_perp + r_parallel
+        let r_perp = self.add(&normal.extend(cos_theta)).extend(eta_over_prime);
+        let r_parallel = normal.extend(-(1.0 - r_perp.quadrance()).abs().sqrt());
+        r_perp.add(&r_parallel)
     }
 
     pub fn x(&self) -> f64 {
@@ -91,8 +155,8 @@ impl Vector3 {
         self.quadrance().sqrt()
     }
 
-    pub fn normalize(self) -> Self {
-        self / self.len()
+    pub fn normal(&self) -> Self {
+        self.reduce(self.len())
     }
 
     pub fn near_zero(&self) -> bool {
@@ -106,131 +170,5 @@ impl Vector3 {
             (self.y().clamp(0.0, 1.0).sqrt() * 255.999) as u8,
             (self.z().clamp(0.0, 1.0).sqrt() * 255.999) as u8,
         ]
-    }
-}
-
-impl Add for Vector3 {
-    type Output = Self;
-
-    fn add(self, rhs: Vector3) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] + rhs.elems[0],
-                self.elems[1] + rhs.elems[1],
-                self.elems[2] + rhs.elems[2],
-            ],
-        }
-    }
-}
-
-impl Add<f64> for Vector3 {
-    type Output = Self;
-
-    fn add(self, rhs: f64) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] + rhs,
-                self.elems[1] + rhs,
-                self.elems[2] + rhs,
-            ],
-        }
-    }
-}
-
-impl AddAssign for Vector3 {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs
-    }
-}
-
-impl Sub for Vector3 {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] - rhs.elems[0],
-                self.elems[1] - rhs.elems[1],
-                self.elems[2] - rhs.elems[2],
-            ],
-        }
-    }
-}
-
-impl SubAssign for Vector3 {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs
-    }
-}
-
-impl Neg for Vector3 {
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        Self {
-            elems: [-self.elems[0], -self.elems[1], -self.elems[2]],
-        }
-    }
-}
-
-impl Mul<Vector3> for Vector3 {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] * rhs.x(),
-                self.elems[1] * rhs.y(),
-                self.elems[2] * rhs.z(),
-            ],
-        }
-    }
-}
-
-impl Mul<f64> for Vector3 {
-    type Output = Self;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] * rhs,
-                self.elems[1] * rhs,
-                self.elems[2] * rhs,
-            ],
-        }
-    }
-}
-
-impl Mul<Vector3> for f64 {
-    type Output = Vector3;
-
-    fn mul(self, rhs: Vector3) -> Self::Output {
-        rhs * self
-    }
-}
-
-impl MulAssign<f64> for Vector3 {
-    fn mul_assign(&mut self, rhs: f64) {
-        *self = *self * rhs
-    }
-}
-
-impl Div<f64> for Vector3 {
-    type Output = Self;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        Self {
-            elems: [
-                self.elems[0] / rhs,
-                self.elems[1] / rhs,
-                self.elems[2] / rhs,
-            ],
-        }
-    }
-}
-
-impl DivAssign<f64> for Vector3 {
-    fn div_assign(&mut self, rhs: f64) {
-        *self = *self * rhs
     }
 }

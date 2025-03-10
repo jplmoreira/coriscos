@@ -1,8 +1,8 @@
 use crate::math::Vector3;
 
 pub struct Ray {
-    origin: Vector3,
-    direction: Vector3,
+    pub origin: Vector3,
+    pub direction: Vector3,
 }
 
 impl Ray {
@@ -10,15 +10,7 @@ impl Ray {
         Self { origin, direction }
     }
 
-    pub fn origin(&self) -> Vector3 {
-        self.origin
-    }
-
-    pub fn direction(&self) -> Vector3 {
-        self.direction
-    }
-
     pub fn at(&self, t: f64) -> Vector3 {
-        self.origin + (t * self.direction)
+        self.origin.add(&self.direction.extend(t))
     }
 }
