@@ -119,9 +119,8 @@ impl Camera {
         Ray::new(ray_origin, ray_direction)
     }
 
-    pub fn create_buffer(&self) -> Vec<Vec<u8>> {
-        let size = (self.image_width * self.image_height) as usize;
-        vec![vec![0; 3]; size]
+    pub fn get_buffer_size(&self) -> u32 {
+        self.image_width * self.image_height
     }
 
     pub fn render(&self, buffer: Vec<u8>, file: &str) {

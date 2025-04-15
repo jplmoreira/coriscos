@@ -74,21 +74,20 @@ impl Caster {
     }
 
     fn get_pixel(&self, buf_idx: u32) -> Vec<u8> {
-        let pixel = (0..self.pixel_samples)
+        let pixel = vec![buf_idx; self.pixel_samples as usize]
             .into_par_iter()
-            .map(|_| self.get_sample(buf_idx))
+            .map(|idx| self.get_sample(idx))
             .reduce(|| Vector3::new(0.0, 0.0, 0.0), |c1, c2| c1.add(&c2));
         let pixel = pixel.reduce(self.pixel_samples as f64);
         pixel.to_color()
     }
 
     pub fn run(&self, file: &str) {
-        let buffer = self.camera.create_buffer();
+        let buffer_size = self.camera.get_buffer_size();
 
-        let buffer: Vec<u8> = buffer
-            .par_iter()
-            .enumerate()
-            .map(|(idx, _)| self.get_pixel(idx as u32))
+        let buffer: Vec<u8> = (0..buffer_size)
+            .into_par_iter()
+            .map(|idx| self.get_pixel(idx as u32))
             .flatten()
             .collect();
 
