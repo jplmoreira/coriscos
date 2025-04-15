@@ -11,8 +11,8 @@ pub struct HitRecord<'a> {
     pub material: &'a dyn Material,
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync + 'static {
     fn hit(&self, ray: &Ray) -> Option<HitRecord>;
 }
 
-pub type HittableRef = Box<dyn Hittable + Send + Sync>;
+pub type HittableRef = Box<dyn Hittable>;

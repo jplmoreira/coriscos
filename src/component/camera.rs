@@ -36,7 +36,7 @@ impl Camera {
         let image_height = if image_height > 1 { image_height } else { 1 }; // min height 1
 
         // Camera
-        let look_direction = look_from.sub(&look_at);
+        let look_direction = &look_from - look_at;
         let theta = vfov.to_radians();
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * focus_distance;
@@ -48,23 +48,20 @@ impl Camera {
         let v = w.cross(&u);
 
         // Viewport vectors
-        let viewport_u = u.extend(viewport_width);
-        let viewport_v = v.neg().extend(viewport_height);
-        let pixel_delta_u = viewport_u.reduce(image_width as f64);
-        let pixel_delta_v = viewport_v.reduce(image_height as f64);
+        let viewport_u = &u * viewport_width;
+        let viewport_v = -&v * viewport_height;
+        let pixel_delta_u = &viewport_u / image_width;
+        let pixel_delta_v = &viewport_v / image_height;
 
         // Upper left pixel
-        let viewport_upper_left = look_from
-            .sub(&w.extend(focus_distance))
-            .sub(&viewport_u.reduce(2.0))
-            .sub(&viewport_v.reduce(2.0));
-        let pixel_upper_left =
-            viewport_upper_left.add(&pixel_delta_u.add(&pixel_delta_v).reduce(2.0));
+        let viewport_upper_left =
+            &look_from - w * focus_distance - viewport_u / 2.0 - viewport_v / 2.0;
+        let pixel_upper_left = viewport_upper_left + (&pixel_delta_u + &pixel_delta_v) / 2.0;
 
         // Camera defocus disk
         let defocus_radius = focus_distance * (defocus_angle / 2.0).to_radians().tan();
-        let defocus_disk_u = u.extend(defocus_radius);
-        let defocus_disk_v = v.extend(defocus_radius);
+        let defocus_disk_u = u * defocus_radius;
+        let defocus_disk_v = v * defocus_radius;
 
         Self {
             look_from,
@@ -86,35 +83,29 @@ impl Camera {
         let mut rng = rand::rng();
         let px = -0.5 + rng.random::<f64>();
         let py = -0.5 + rng.random::<f64>();
-        self.pixel_delta_u
-            .extend(px)
-            .add(&self.pixel_delta_v.extend(py))
+        &self.pixel_delta_u * px + &self.pixel_delta_v * py
     }
 
     fn defocus_disk_sample(&self) -> Vector3 {
         let v = Vector3::random_in_region([1.0, 1.0, 0.0]);
-        self.look_from
-            .add(&self.defocus_disk_u.extend(v.x()))
-            .add(&self.defocus_disk_v.extend(v.y()))
+        &self.look_from + &self.defocus_disk_u * v.x + &self.defocus_disk_v * v.y
     }
 
     pub fn sample_ray(&self, buf_idx: u32) -> Ray {
         let x = buf_idx % self.image_width;
         let y = buf_idx / self.image_width;
 
-        let pixel_center = self
-            .pixel_upper_left
-            .add(&self.pixel_delta_u.extend(x as f64))
-            .add(&self.pixel_delta_v.extend(y as f64));
+        let pixel_center =
+            &self.pixel_upper_left + &self.pixel_delta_u * x + &self.pixel_delta_v * y;
 
-        let pixel_sample = pixel_center.add(&self.pixel_sample_rand());
+        let pixel_sample = pixel_center + self.pixel_sample_rand();
 
         let ray_origin = if self.defocus_angle <= 0.0 {
             self.look_from.clone()
         } else {
             self.defocus_disk_sample()
         };
-        let ray_direction = pixel_sample.sub(&ray_origin);
+        let ray_direction = pixel_sample - &ray_origin;
 
         Ray::new(ray_origin, ray_direction)
     }

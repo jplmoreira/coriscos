@@ -8,8 +8,8 @@ mod material;
 mod math;
 
 fn main() {
-    let pixel_samples = 2000;
-    let max_depth = 100;
+    let pixel_samples = 1000;
+    let max_depth = 50;
 
     println!("start time - {:?}", chrono::offset::Local::now());
 

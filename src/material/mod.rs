@@ -11,7 +11,7 @@ pub struct ScatterResult {
     pub attenuation: Vector3,
 }
 
-pub trait Material {
+pub trait Material: Send + Sync + 'static {
     fn scatter(&self, _record: &HitRecord) -> Option<ScatterResult> {
         None
     }

@@ -28,7 +28,7 @@ impl Material for Glass {
             self.refraction_index
         };
         let unit_direction = record.direction.normal();
-        let cos_theta = unit_direction.neg().dot(&record.normal).min(1.0);
+        let cos_theta = -unit_direction.dot(&record.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let mut rng = rand::rng();

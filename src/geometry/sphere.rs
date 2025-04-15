@@ -8,7 +8,7 @@ pub struct Sphere<M: Material> {
     material: M,
 }
 
-impl<M: Material + Send + Sync + 'static> Sphere<M> {
+impl<M: Material> Sphere<M> {
     pub fn new(center: Vector3, radius: f64, material: M) -> HittableRef {
         Box::new(Self {
             center,
@@ -23,7 +23,7 @@ impl<M: Material> Hittable for Sphere<M> {
         let t_min = 0.001;
         let t_max = f64::INFINITY;
 
-        let oc = ray.origin.sub(&self.center);
+        let oc = &ray.origin - &self.center;
         let a = ray.direction.quadrance();
         let half_b = oc.dot(&ray.direction);
         let c = oc.quadrance() - self.radius * self.radius;
@@ -38,12 +38,12 @@ impl<M: Material> Hittable for Sphere<M> {
                 }
             }
             let point = ray.at(root);
-            let normal = point.sub(&self.center).reduce(self.radius);
+            let normal = (&point - &self.center) / self.radius;
             let front = ray.direction.dot(&normal) < 0.0;
 
             return Some(HitRecord {
                 point,
-                normal: if front { normal } else { normal.neg() },
+                normal: if front { normal } else { -normal },
                 direction: ray.direction.clone(),
                 t: root,
                 front,

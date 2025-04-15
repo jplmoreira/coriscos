@@ -22,7 +22,7 @@ impl Material for Metal {
 
         let scattered = Ray::new(
             record.point.clone(),
-            reflected.add(&Vector3::random_unit().extend(self.fuzz)),
+            reflected + Vector3::random_unit() * self.fuzz,
         );
         Some(ScatterResult {
             _t: record.t,

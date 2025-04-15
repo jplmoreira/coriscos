@@ -14,7 +14,7 @@ impl Lambert {
 
 impl Material for Lambert {
     fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
-        let mut scatter_direction = record.normal.add(&Vector3::random_unit());
+        let mut scatter_direction = &record.normal + Vector3::random_unit();
         if scatter_direction.near_zero() {
             scatter_direction = record.normal.clone();
         }

@@ -20,7 +20,7 @@ impl Caster {
         let background = Vector3::new(0.0, 0.0, 0.0);
 
         let aspect_ratio = 16.0 / 9.0;
-        let image_width = 1920;
+        let image_width = 1200;
         let vfov = 20.0;
         let defocus_angle = 0.6;
         let focus_distance = 10.0;
@@ -56,10 +56,8 @@ impl Caster {
             let emission_color = hit.material.emit(&hit);
 
             if let Some(scattered) = hit.material.scatter(&hit) {
-                let scatter_color = scattered
-                    .attenuation
-                    .mul(&self.cast(scattered.ray, depth - 1));
-                return emission_color.add(&scatter_color);
+                let scatter_color = scattered.attenuation * self.cast(scattered.ray, depth - 1);
+                return emission_color + scatter_color;
             } else {
                 return emission_color;
             }
@@ -77,8 +75,8 @@ impl Caster {
         let pixel = vec![buf_idx; self.pixel_samples as usize]
             .into_par_iter()
             .map(|idx| self.get_sample(idx))
-            .reduce(|| Vector3::new(0.0, 0.0, 0.0), |c1, c2| c1.add(&c2));
-        let pixel = pixel.reduce(self.pixel_samples as f64);
+            .reduce(|| Vector3::new(0.0, 0.0, 0.0), |c1, c2| c1 + c2);
+        let pixel = pixel / self.pixel_samples;
         pixel.to_color()
     }
 

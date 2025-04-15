@@ -12,3 +12,4 @@ The used scene was the last one from the book with `image_width = 1200`, `pixel_
 * 2 - Parallelized ray casting and pixel sampling [~37 minutes]
 * 3 - Parallelized hit calculation for scene objects [2 hours] - ROLLED BACK
 * 4 - Diffuse Light implementation [~41 minutes]
+* 5 - Multiple optimizations (including using `release`) [~7 minutes]

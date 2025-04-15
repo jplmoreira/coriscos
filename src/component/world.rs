@@ -30,9 +30,9 @@ impl World {
                     b as f64 + 0.9 * math::rand_f64(),
                 );
 
-                if (center.sub(&Vector3::new(4.0, 0.2, 0.0))).len() > 0.9 {
+                if (&center - Vector3::new(4.0, 0.2, 0.0)).len() > 0.9 {
                     if choose_mat < 0.8 {
-                        let albedo = Vector3::random(0.0, 1.0).mul(&Vector3::random(0.0, 1.0));
+                        let albedo = Vector3::random(0.0, 1.0) * Vector3::random(0.0, 1.0);
                         objects.push(Sphere::new(center, 0.2, Lambert::new(albedo)));
                     } else if choose_mat < 0.95 {
                         let albedo = Vector3::random(0.5, 1.0);
