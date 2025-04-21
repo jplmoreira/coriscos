@@ -1,6 +1,7 @@
 use std::ops;
 
 use rand::Rng;
+use serde::Deserialize;
 
 pub fn rand_f64() -> f64 {
     let mut rng = rand::rng();
@@ -12,7 +13,7 @@ pub fn rand_range_f64(min: f64, max: f64) -> f64 {
     rng.random_range(min..max)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Vector3 {
     pub x: f64,
     pub y: f64,

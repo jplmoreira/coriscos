@@ -1,7 +1,7 @@
 use image::RgbImage;
 use rand::Rng;
 
-use crate::math::Vector3;
+use crate::{math::Vector3, settings};
 
 use super::ray::Ray;
 
@@ -22,22 +22,26 @@ pub struct Camera {
 
 impl Camera {
     pub fn build(
-        look_from: Vector3,
-        look_at: Vector3,
-        vup: Vector3,
-        aspect_ratio: f64,
-        image_width: u32,
-        vfov: f64,
-        defocus_angle: f64,
-        focus_distance: f64,
+        settings::Camera {
+            image_width,
+            aspect_height,
+            aspect_width,
+            vertical_fov,
+            defocus_angle,
+            focus_distance,
+            look_from,
+            look_at,
+            vup,
+        }: settings::Camera,
     ) -> Self {
         // Image
+        let aspect_ratio = aspect_height / aspect_width;
         let image_height = (image_width as f64 / aspect_ratio) as u32; // height calculation from aspect ratio
         let image_height = if image_height > 1 { image_height } else { 1 }; // min height 1
 
         // Camera
         let look_direction = &look_from - look_at;
-        let theta = vfov.to_radians();
+        let theta = vertical_fov.to_radians();
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * focus_distance;
         let viewport_width = viewport_height * (image_width as f64 / image_height as f64); // height calculation directly from image, not aspect ratio

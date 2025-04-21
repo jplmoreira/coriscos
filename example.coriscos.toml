@@ -1,0 +1,21 @@
+## Example config file with the default values
+
+[image]
+output = "image.png"
+pixel_samples = 1000
+max_depth = 50
+
+[camera]
+image_width = 1200
+aspect_height = 16
+aspect_width = 9
+vertical_fov = 20.0
+defocus_angle = 0.6
+focus_distance = 10.0
+look_from = [ 13.0, 2.0, 3.0 ]
+look_at = [ 0.0, 0.0, 0.0 ]
+vup = [ 0.0, 1.0, 0.0 ]
+
+# optional, scene is randomized if missing
+[scene]
+input = ""

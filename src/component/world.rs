@@ -2,6 +2,7 @@ use crate::{
     geometry::{sphere::Sphere, HitRecord, HittableRef},
     material::{diffuse_light::DiffuseLight, glass::Glass, lambert::Lambert, metal::Metal},
     math::{self, Vector3},
+    settings,
 };
 
 use super::ray::Ray;
@@ -11,7 +12,9 @@ pub struct World {
 }
 
 impl World {
-    pub fn build(_file: &str) -> Self {
+    pub fn build(settings: Option<settings::Scene>) -> Self {
+        let _input_file = settings.map(|s| s.input).unwrap_or("".into());
+
         let mut objects: Vec<HittableRef> = Vec::new();
 
         let material_ground = Lambert::new(Vector3::new(0.5, 0.5, 0.5));

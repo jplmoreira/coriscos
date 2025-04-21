@@ -1,6 +1,7 @@
+use config::ConfigError;
 use rayon::prelude::*;
 
-use crate::math::Vector3;
+use crate::{math::Vector3, settings::Settings};
 
 use super::{camera::Camera, ray::Ray, world::World};
 
@@ -10,41 +11,31 @@ pub struct Caster {
     background: Vector3,
     pixel_samples: u32,
     max_depth: u32,
+    output_file: String,
 }
 
 impl Caster {
-    pub fn build(pixel_samples: u32, max_depth: u32) -> Self {
-        let look_from = Vector3::new(13.0, 2.0, 3.0);
-        let look_at = Vector3::new(0.0, 0.0, 0.0);
-        let vup = Vector3::new(0.0, 1.0, 0.0);
+    pub fn build() -> Result<Self, ConfigError> {
+        let Settings {
+            image,
+            camera,
+            scene,
+        } = Settings::new()?;
+
         let background = Vector3::new(0.0, 0.0, 0.0);
 
-        let aspect_ratio = 16.0 / 9.0;
-        let image_width = 1200;
-        let vfov = 20.0;
-        let defocus_angle = 0.6;
-        let focus_distance = 10.0;
+        let camera = Camera::build(camera);
 
-        let camera = Camera::build(
-            look_from,
-            look_at,
-            vup,
-            aspect_ratio,
-            image_width,
-            vfov,
-            defocus_angle,
-            focus_distance,
-        );
+        let world = World::build(scene);
 
-        let world = World::build("");
-
-        Self {
+        Ok(Self {
             world,
             camera,
             background,
-            pixel_samples,
-            max_depth,
-        }
+            pixel_samples: image.pixel_samples,
+            max_depth: image.max_depth,
+            output_file: image.output,
+        })
     }
 
     fn cast(&self, ray: Ray, depth: u32) -> Vector3 {
@@ -80,7 +71,7 @@ impl Caster {
         pixel.to_color()
     }
 
-    pub fn run(&self, file: &str) {
+    pub fn run(self) {
         let buffer_size = self.camera.get_buffer_size();
 
         let buffer: Vec<u8> = (0..buffer_size)
@@ -89,6 +80,6 @@ impl Caster {
             .flatten()
             .collect();
 
-        self.camera.render(buffer, file);
+        self.camera.render(buffer, &self.output_file);
     }
 }
