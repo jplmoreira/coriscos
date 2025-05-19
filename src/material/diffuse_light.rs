@@ -1,4 +1,4 @@
-use crate::{geometry::HitRecord, math::Vector3};
+use crate::math::Vector3;
 
 use super::Material;
 
@@ -13,7 +13,7 @@ impl DiffuseLight {
 }
 
 impl Material for DiffuseLight {
-    fn emit(&self, _record: &HitRecord) -> Vector3 {
+    fn emit(&self) -> Vector3 {
         return self.color.clone();
     }
 }

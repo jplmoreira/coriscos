@@ -1,11 +1,20 @@
-use crate::{component::ray::Ray, material::Material, math::Vector3};
+use std::sync::Arc;
 
-use super::{HitRecord, Hittable, HittableRef};
+use crate::{
+    component::{
+        hit::{Hit, HitRecord},
+        ray::Ray,
+    },
+    material::Material,
+    math::Vector3,
+};
+
+use super::{Hittable, HittableRef};
 
 pub struct Sphere<M: Material> {
     center: Vector3,
     radius: f64,
-    material: M,
+    material: Arc<M>,
 }
 
 impl<M: Material> Sphere<M> {
@@ -13,13 +22,13 @@ impl<M: Material> Sphere<M> {
         Box::new(Self {
             center,
             radius,
-            material,
+            material: Arc::new(material),
         })
     }
 }
 
 impl<M: Material> Hittable for Sphere<M> {
-    fn hit(&self, ray: &Ray) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray) -> Option<Hit> {
         let t_min = 0.001;
         let t_max = f64::INFINITY;
 
@@ -41,13 +50,17 @@ impl<M: Material> Hittable for Sphere<M> {
             let normal = (&point - &self.center) / self.radius;
             let front = ray.direction.dot(&normal) < 0.0;
 
-            return Some(HitRecord {
+            let record = HitRecord {
+                buf_idx: ray.buf_idx,
                 point,
                 normal: if front { normal } else { -normal },
                 direction: ray.direction.clone(),
                 t: root,
                 front,
-                material: &self.material,
+            };
+            return Some(Hit {
+                record,
+                material: self.material.clone(),
             });
         }
 

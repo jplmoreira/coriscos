@@ -1,7 +1,6 @@
 use std::time::Instant;
 
-use component::caster::Caster;
-
+mod caster;
 mod component;
 mod geometry;
 mod material;
@@ -12,7 +11,7 @@ fn main() {
     println!("start time - {:?}", chrono::offset::Local::now());
 
     let now = Instant::now();
-    let caster = Caster::build().unwrap();
+    let caster = caster::Caster::build().unwrap();
 
     println!("build duration - {}ms", now.elapsed().as_millis());
 

@@ -1,4 +1,7 @@
-use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
+use crate::{
+    component::{hit::HitRecord, ray::Ray},
+    math::Vector3,
+};
 
 pub mod diffuse_light;
 pub mod glass;
@@ -12,10 +15,10 @@ pub struct ScatterResult {
 }
 
 pub trait Material: Send + Sync + 'static {
-    fn scatter(&self, _record: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, _record: HitRecord) -> Option<ScatterResult> {
         None
     }
-    fn emit(&self, _record: &HitRecord) -> Vector3 {
-        return Vector3::new(0.0, 0.0, 0.0);
+    fn emit(&self) -> Vector3 {
+        return Vector3::fill(0.0);
     }
 }

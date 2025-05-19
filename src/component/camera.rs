@@ -111,7 +111,7 @@ impl Camera {
         };
         let ray_direction = pixel_sample - &ray_origin;
 
-        Ray::new(ray_origin, ray_direction)
+        Ray::new(buf_idx, ray_origin, ray_direction)
     }
 
     pub fn get_buffer_size(&self) -> u32 {
