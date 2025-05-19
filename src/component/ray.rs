@@ -2,15 +2,17 @@ use std::{
     future::Future,
     iter::zip,
     pin::Pin,
+    sync::Arc,
     task::{Context, Poll},
 };
 
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::{channel::unbounded, deque::Injector};
 
 use crate::math::Vector3;
 
 use super::hit::{HitReceiver, HitSender};
 
+#[derive(Clone)]
 pub struct Ray {
     pub buf_idx: u32,
     pub origin: Vector3,
@@ -31,26 +33,28 @@ impl Ray {
     }
 }
 
-pub(crate) type RaySender = Sender<(Ray, HitSender)>;
-pub(crate) type RayReceiver = Receiver<(Ray, HitSender)>;
-
 pub(crate) struct RayCast {
     buf_idx: u32,
     depth: u32,
     colors: Vec<Vector3>,
     attenuations: Vec<Option<Vector3>>,
     background: Vector3,
-    ray_sender: RaySender,
+    injector: Arc<Injector<(Ray, HitSender)>>,
     hit_receiver: HitReceiver,
     hit_sender: HitSender,
 }
 
 impl RayCast {
-    pub(crate) fn new(ray: Ray, depth: u32, background: Vector3, sender: RaySender) -> Self {
+    pub(crate) fn new(
+        ray: Ray,
+        depth: u32,
+        background: Vector3,
+        injector: Arc<Injector<(Ray, HitSender)>>,
+    ) -> Self {
         let buf_idx = ray.buf_idx;
 
         let (s, r) = unbounded();
-        sender.send((ray, s.clone())).unwrap();
+        injector.push((ray, s.clone()));
 
         Self {
             buf_idx,
@@ -58,7 +62,7 @@ impl RayCast {
             colors: Vec::new(),
             attenuations: Vec::new(),
             background,
-            ray_sender: sender,
+            injector,
             hit_receiver: r,
             hit_sender: s,
         }
@@ -107,14 +111,7 @@ impl Future for RayCast {
                         Some(scattered) => {
                             this.depth -= 1;
                             attenuation = Some(scattered.attenuation);
-
-                            if let Err(e) = this
-                                .ray_sender
-                                .send((scattered.ray, this.hit_sender.clone()))
-                            {
-                                eprintln!("error casting a ray #{buf_idx}: {e}");
-                                this.depth = 0;
-                            }
+                            this.injector.push((scattered.ray, this.hit_sender.clone()));
                         }
                         None => this.depth = 0,
                     }
