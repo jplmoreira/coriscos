@@ -51,7 +51,6 @@ impl<M: Material> Hittable for Sphere<M> {
             let front = ray.direction.dot(&normal) < 0.0;
 
             let record = HitRecord {
-                buf_idx: ray.buf_idx,
                 point,
                 normal: if front { normal } else { -normal },
                 direction: ray.direction.clone(),

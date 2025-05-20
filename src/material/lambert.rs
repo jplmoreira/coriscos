@@ -22,7 +22,7 @@ impl Material for Lambert {
             scatter_direction = record.normal.clone();
         }
 
-        let scattered = Ray::new(record.buf_idx, record.point.clone(), scatter_direction);
+        let scattered = Ray::new(record.point.clone(), scatter_direction);
         Some(ScatterResult {
             _t: record.t,
             ray: scattered,

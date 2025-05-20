@@ -1,9 +1,11 @@
+use chrono::Local;
 use config::ConfigError;
 use futures::{
     executor,
     stream::{self, StreamExt},
     FutureExt,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::{
     component::{camera::Camera, scene::Scene},
@@ -41,27 +43,47 @@ impl Caster {
     }
 
     pub(crate) fn run(self) {
-        let buffer_size = self.camera.get_buffer_size();
-        println!("creating a buffer of size {buffer_size}");
+        let buffer = self.camera.get_buffer();
+        let buffer_size = buffer.len();
 
-        let buffer = stream::iter(0..buffer_size)
+        let bar = ProgressBar::new(buffer_size as u64).with_style(
+            ProgressStyle::default_bar()
+                .template("{wide_bar} {percent_precise:>7}%/100%\n{wide_msg} {elapsed_precise:>}")
+                .unwrap(),
+        );
+
+        let buffer = bar
+            .wrap_stream(stream::iter(buffer))
             .map(|buf_idx| {
                 stream::iter(vec![buf_idx; self.pixel_samples as usize])
-                    .map(|buf_idx| self.camera.sample_ray(buf_idx))
-                    .then(|ray| self.scene.cast(ray, self.max_depth))
-                    .fold(Vector3::fill(0.0), |acc, v| async move { acc + v })
-                    .then(move |v| async move {
-                        println!("finished pixel #{buf_idx}");
-                        return v;
+                    .enumerate()
+                    .map(|(samp_idx, buf_idx)| (self.camera.sample_ray(buf_idx), buf_idx, samp_idx))
+                    .map(|(ray, buf_idx, samp_idx)| {
+                        self.scene.cast(ray, buf_idx, samp_idx, self.max_depth)
                     })
+                    .buffer_unordered(self.pixel_samples as usize)
+                    .fold(Vector3::fill(0.0), |acc, v| async move { acc + v })
+                    .map(move |v| (buf_idx, (v / self.pixel_samples).to_color()))
             })
-            .then(|v| async move { v.await / self.pixel_samples })
-            .map(|p| stream::iter(p.to_color()))
+            .buffer_unordered(self.camera.image_width as usize)
+            .collect::<Vec<(u32, Vec<u8>)>>();
+
+        println!(
+            "Start time - {} | # of pixels - {buffer_size} | Worker threads - {} | Output file - {}",
+            Local::now().format("%H:%M:%S"),
+            self.scene.thread_count,
+            self.output_file,
+        );
+
+        let mut buffer = executor::block_on(buffer);
+        bar.finish();
+
+        buffer.sort_by(|(a, _), (b, _)| a.cmp(b));
+        let buffer = buffer
+            .into_iter()
+            .map(|v| v.1)
             .flatten()
             .collect::<Vec<u8>>();
-        let buffer = executor::block_on(buffer);
-
-        println!("finished building the buffer, now rendering it...");
 
         self.camera.render(buffer, &self.output_file);
     }

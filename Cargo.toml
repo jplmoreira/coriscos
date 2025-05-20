@@ -9,5 +9,6 @@ config = { version = "0.15.11", default-features = false, features = ["toml"] }
 crossbeam = "0.8.4"
 futures = "0.3.31"
 image = "0.24.7"
+indicatif = { version = "0.17.11", features = ["futures"] }
 rand = "0.9"
 serde = { version = "1.0.219", features = ["derive"] }

@@ -2,30 +2,24 @@ use std::{
     future::Future,
     iter::zip,
     pin::Pin,
-    sync::Arc,
+    sync::{Arc, OnceLock, RwLock},
     task::{Context, Poll},
 };
 
-use crossbeam::{channel::unbounded, deque::Injector};
+use crossbeam::deque::Injector;
 
 use crate::math::Vector3;
 
-use super::hit::{HitReceiver, HitSender};
+use super::hit::Hit;
 
-#[derive(Clone)]
 pub struct Ray {
-    pub buf_idx: u32,
     pub origin: Vector3,
     pub direction: Vector3,
 }
 
 impl Ray {
-    pub fn new(buf_idx: u32, origin: Vector3, direction: Vector3) -> Self {
-        Self {
-            buf_idx,
-            origin,
-            direction,
-        }
+    pub fn new(origin: Vector3, direction: Vector3) -> Self {
+        Self { origin, direction }
     }
 
     pub fn at(&self, t: f64) -> Vector3 {
@@ -34,94 +28,121 @@ impl Ray {
 }
 
 pub(crate) struct RayCast {
+    pub(crate) ray: Ray,
     buf_idx: u32,
+    samp_idx: usize,
     depth: u32,
     colors: Vec<Vector3>,
     attenuations: Vec<Option<Vector3>>,
-    background: Vector3,
-    injector: Arc<Injector<(Ray, HitSender)>>,
-    hit_receiver: HitReceiver,
-    hit_sender: HitSender,
+    background: Arc<Vector3>,
+    result: Arc<RwLock<OnceLock<Vector3>>>,
 }
 
 impl RayCast {
     pub(crate) fn new(
         ray: Ray,
+        buf_idx: u32,
+        samp_idx: usize,
         depth: u32,
-        background: Vector3,
-        injector: Arc<Injector<(Ray, HitSender)>>,
+        background: Arc<Vector3>,
+        result: Arc<RwLock<OnceLock<Vector3>>>,
     ) -> Self {
-        let buf_idx = ray.buf_idx;
-
-        let (s, r) = unbounded();
-        injector.push((ray, s.clone()));
-
         Self {
+            ray,
             buf_idx,
+            samp_idx,
             depth,
             colors: Vec::new(),
             attenuations: Vec::new(),
             background,
-            injector,
-            hit_receiver: r,
-            hit_sender: s,
+            result,
         }
     }
 
-    fn resolve(&self) -> Vector3 {
-        zip(&self.colors, &self.attenuations).rev().fold(
-            Vector3::fill(0.0),
-            |acc, (color, attenuation)| match attenuation {
-                Some(attenuation) => (acc + color) * attenuation,
-                None => acc + color,
-            },
-        )
+    pub(crate) fn resolve_hit(mut self, opt_hit: Option<Hit>) -> Option<Self> {
+        let mut color = None;
+        let mut attenuation = None;
+
+        match opt_hit {
+            Some(hit) => {
+                let material = hit.material;
+                let record = hit.record;
+                color = Some(material.emit());
+
+                match material.scatter(record) {
+                    Some(scattered) => {
+                        attenuation = Some(scattered.attenuation);
+                        self.ray = scattered.ray;
+                        self.depth -= 1;
+                    }
+                    None => self.depth = 0,
+                }
+            }
+            None => self.depth = 0,
+        }
+
+        match color {
+            Some(c) => self.colors.push(c),
+            None => self.colors.push(self.background.as_ref().clone()),
+        }
+        self.attenuations.push(attenuation);
+
+        if self.depth == 0 {
+            let result = zip(self.colors, self.attenuations).rev().fold(
+                Vector3::fill(0.0),
+                |acc, (color, attenuation)| match attenuation {
+                    Some(attenuation) => (acc + color) * attenuation,
+                    None => acc + color,
+                },
+            );
+
+            if let Ok(guard) = self.result.read() {
+                if let Ok(()) = guard.set(result) {
+                    return None;
+                }
+            }
+
+            eprintln!(
+                "error setting result for pixel #{} - sample #{}",
+                self.buf_idx, self.samp_idx
+            );
+            return None;
+        }
+
+        Some(self)
     }
 }
 
-impl Future for RayCast {
+pub(crate) struct RayFut {
+    result: Arc<RwLock<OnceLock<Vector3>>>,
+}
+
+impl RayFut {
+    pub(crate) fn new(
+        ray: Ray,
+        buf_idx: u32,
+        samp_idx: usize,
+        depth: u32,
+        background: Arc<Vector3>,
+        injector: Arc<Injector<RayCast>>,
+    ) -> Self {
+        let result = Arc::new(RwLock::new(OnceLock::new()));
+        let cast = RayCast::new(ray, buf_idx, samp_idx, depth, background, result.clone());
+        injector.push(cast);
+
+        Self { result }
+    }
+}
+
+impl Future for RayFut {
     type Output = Vector3;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        if this.depth == 0 {
-            return Poll::Ready(this.resolve());
-        }
-        let buf_idx = this.buf_idx;
 
-        let message = match this.hit_receiver.try_recv() {
-            Ok(record) => Some(record),
-            Err(crossbeam::channel::TryRecvError::Empty) => None,
-            Err(e) => {
-                eprintln!("error casting a ray #{buf_idx}: {e}");
-                this.depth = 0;
-                None
-            }
-        };
-
-        if let Some(record) = message {
-            match record {
-                Some(hit) => {
-                    let material = hit.material;
-                    let record = hit.record;
-
-                    this.colors.push(material.emit());
-                    let mut attenuation = None;
-                    match material.scatter(record) {
-                        Some(scattered) => {
-                            this.depth -= 1;
-                            attenuation = Some(scattered.attenuation);
-                            this.injector.push((scattered.ray, this.hit_sender.clone()));
-                        }
-                        None => this.depth = 0,
-                    }
-                    this.attenuations.push(attenuation);
-                }
-                None => {
-                    this.colors.push(this.background.clone());
-                    this.attenuations.push(None);
-                    this.depth = 0;
-                }
+        if let Ok(mut guard) = this.result.try_write() {
+            if let Some(result) = guard.take() {
+                return Poll::Ready(result);
             }
         }
 

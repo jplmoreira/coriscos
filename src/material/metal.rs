@@ -24,7 +24,6 @@ impl Material for Metal {
         let reflected = record.direction.normal().reflect(&record.normal);
 
         let scattered = Ray::new(
-            record.buf_idx,
             record.point.clone(),
             reflected + Vector3::random_unit() * self.fuzz,
         );

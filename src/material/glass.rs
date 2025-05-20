@@ -44,7 +44,7 @@ impl Material for Glass {
         };
         Some(ScatterResult {
             _t: record.t,
-            ray: Ray::new(record.buf_idx, record.point.clone(), direction),
+            ray: Ray::new(record.point.clone(), direction),
             attenuation: Vector3::fill(1.0),
         })
     }

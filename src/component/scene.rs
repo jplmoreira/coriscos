@@ -16,16 +16,14 @@ use crate::{
     settings,
 };
 
-use super::{
-    hit::HitSender,
-    ray::{Ray, RayCast},
-};
+use super::ray::{Ray, RayCast, RayFut};
 
 #[allow(dead_code)]
 pub(crate) struct Scene {
     objects: Arc<Vec<HittableRef>>,
-    background: Vector3,
-    injector: Arc<Injector<(Ray, HitSender)>>,
+    background: Arc<Vector3>,
+    pub(crate) thread_count: usize,
+    injector: Arc<Injector<RayCast>>,
     is_running: Arc<AtomicBool>,
     handlers: Vec<JoinHandle<()>>,
 }
@@ -36,10 +34,9 @@ impl Scene {
 
         let objects = random_scene();
         let objects = Arc::new(objects);
-        let background = Vector3::fill(0.0);
+        let background = Arc::new(Vector3::fill(0.0));
 
         let thread_count = thread::available_parallelism().unwrap().get();
-        println!("Creating a thread pool of size {thread_count}");
 
         let injector = Arc::new(Injector::new());
         let is_running = Arc::new(AtomicBool::new(true));
@@ -48,7 +45,7 @@ impl Scene {
         let mut stealers = Vec::with_capacity(thread_count);
 
         for _ in 0..thread_count {
-            let worker: Worker<(Ray, HitSender)> = Worker::new_fifo();
+            let worker: Worker<RayCast> = Worker::new_fifo();
             stealers.push(worker.stealer());
             workers.push(worker);
         }
@@ -66,14 +63,14 @@ impl Scene {
 
             handlers.push(thread::spawn(move || {
                 while is_running.load(Ordering::Relaxed) {
-                    if let Some((ray, hit_sender)) =
-                        find_work(&worker, &injector, &stealers, batch_limit)
-                    {
+                    let mut work = find_work(&worker, &injector, &stealers, batch_limit);
+
+                    while let Some(cast) = work {
                         let mut hit = None;
                         let mut closest = f64::INFINITY;
 
                         for obj in objects.iter() {
-                            if let Some(res) = obj.hit(&ray) {
+                            if let Some(res) = obj.hit(&cast.ray) {
                                 if res.record.t < closest {
                                     closest = res.record.t;
                                     hit = Some(res);
@@ -81,7 +78,7 @@ impl Scene {
                             }
                         }
 
-                        let _ = hit_sender.send(hit);
+                        work = cast.resolve_hit(hit);
                     }
                 }
             }));
@@ -90,15 +87,18 @@ impl Scene {
         Self {
             objects,
             background,
+            thread_count,
             injector,
             is_running,
             handlers,
         }
     }
 
-    pub fn cast(&self, ray: Ray, max_depth: u32) -> RayCast {
-        RayCast::new(
+    pub fn cast(&self, ray: Ray, buf_idx: u32, samp_idx: usize, max_depth: u32) -> RayFut {
+        RayFut::new(
             ray,
+            buf_idx,
+            samp_idx,
             max_depth,
             self.background.clone(),
             self.injector.clone(),
