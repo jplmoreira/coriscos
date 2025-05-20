@@ -1,6 +1,9 @@
 use rand::Rng;
 
-use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
+use crate::{
+    component::{hit::HitRecord, ray::Ray},
+    math::Vector3,
+};
 
 use super::{Material, ScatterResult};
 
@@ -21,7 +24,7 @@ impl Glass {
 }
 
 impl Material for Glass {
-    fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, record: HitRecord) -> Option<ScatterResult> {
         let refraction_ratio = if record.front {
             1.0 / self.refraction_index
         } else {
@@ -42,7 +45,7 @@ impl Material for Glass {
         Some(ScatterResult {
             _t: record.t,
             ray: Ray::new(record.point.clone(), direction),
-            attenuation: Vector3::new(1.0, 1.0, 1.0),
+            attenuation: Vector3::fill(1.0),
         })
     }
 }

@@ -1,4 +1,4 @@
 pub mod camera;
-pub mod caster;
+pub mod hit;
 pub mod ray;
-pub mod world;
+pub mod scene;

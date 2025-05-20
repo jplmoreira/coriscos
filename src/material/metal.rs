@@ -1,4 +1,7 @@
-use crate::{component::ray::Ray, geometry::HitRecord, math::Vector3};
+use crate::{
+    component::{hit::HitRecord, ray::Ray},
+    math::Vector3,
+};
 
 use super::{Material, ScatterResult};
 
@@ -17,7 +20,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, record: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, record: HitRecord) -> Option<ScatterResult> {
         let reflected = record.direction.normal().reflect(&record.normal);
 
         let scattered = Ray::new(

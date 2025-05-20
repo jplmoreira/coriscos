@@ -16,7 +16,7 @@ pub struct Camera {
     defocus_disk_u: Vector3,
     defocus_disk_v: Vector3,
     defocus_angle: f64,
-    image_width: u32,
+    pub image_width: u32,
     image_height: u32,
 }
 
@@ -114,8 +114,18 @@ impl Camera {
         Ray::new(ray_origin, ray_direction)
     }
 
-    pub fn get_buffer_size(&self) -> u32 {
-        self.image_width * self.image_height
+    pub fn get_buffer(&self) -> Vec<u32> {
+        let buf_size = self.image_width * self.image_height;
+        let mid = buf_size / 2;
+
+        let first_half = (0..mid).collect::<Vec<_>>();
+        let second_half_rev = (mid..buf_size).rev().collect::<Vec<_>>();
+
+        first_half
+            .chunks(self.image_width as usize)
+            .zip(second_half_rev.chunks(self.image_width as usize))
+            .flat_map(|(a, b)| a.iter().chain(b.iter()).copied())
+            .collect()
     }
 
     pub fn render(&self, buffer: Vec<u8>, file: &str) {

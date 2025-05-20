@@ -19,3 +19,14 @@ The used scene was the last one from the book with `image_width = 1200`, `pixel_
 * 3 - Parallelized hit calculation for scene objects [2 hours] - ROLLED BACK
 * 4 - Diffuse Light implementation [~41 minutes]
 * 5 - Multiple optimizations (including using `release`) [~7 minutes]
+* 6 - Use custom work stealing thread pool (removed `rayon`) [~8 minutes]
+
+### Custom thread pool notes
+
+The custom thread pool uses `crossbeam` to create a work stealing scheduler.
+
+Created a custom `Future` struct that completes when a worker thread calculates a casted ray final color. This is used in a nested `Stream` that is buffered and is blocked using `futures::executor`.
+
+Each worker thread will complete a ray cast until it's maximum depth. Also tested putting each ray bounce in the work queue, but it lead to a worse performance.
+
+The performance isn't as good as when using `rayon` but it is comparable, will keep this implementation for possible future optimizations.

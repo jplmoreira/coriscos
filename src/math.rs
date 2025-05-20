@@ -114,8 +114,8 @@ impl Vector3 {
 }
 
 macro_rules! impl_math_vec3 {
-    (impl $tr:ident as $f:ident & $op:tt) => {
-        impl_math_generic!(impl $tr for Vector3 as $f & $op use |a, b| {
+    (impl $tr:ident & $tra:ident as $f:ident & $fa:ident & $op:tt) => {
+        impl_math_generic!(impl $tr & $tra for Vector3 as $f & $fa & $op use |a, b| {
             Vector3::new(a.x $op b.x,a.y $op b.y, a.z $op b.z)
         });
         impl_math_into_generic!(impl $tr for Vector3 as $f & $op use |a, b| {
@@ -125,7 +125,7 @@ macro_rules! impl_math_vec3 {
 }
 
 macro_rules! impl_math_generic {
-    (impl $tr:ident for $name:ident as $f:ident & $op:tt use |$lhs:tt, $rhs:tt| { $ex:expr }) => {
+    (impl $tr:ident & $tra:ident for $name:ident as $f:ident & $fa:ident & $op:tt use |$lhs:tt, $rhs:tt| { $ex:expr }) => {
         impl ops::$tr for &$name {
             type Output = $name;
             #[inline]
@@ -155,6 +155,18 @@ macro_rules! impl_math_generic {
                 &self $op &$rhs
             }
         }
+        impl ops::$tra<&$name> for $name {
+            #[inline]
+            fn $fa(&mut self, other: &$name) {
+                *self = &*self $op other
+            }
+        }
+        impl ops::$tra for $name {
+            #[inline]
+            fn $fa(&mut self, other: Self) {
+                *self = &*self $op other
+            }
+        }
     };
 }
 
@@ -179,10 +191,10 @@ macro_rules! impl_math_into_generic {
     };
 }
 
-impl_math_vec3!(impl Add as add & +);
-impl_math_vec3!(impl Sub as sub & -);
-impl_math_vec3!(impl Mul as mul & *);
-impl_math_vec3!(impl Div as div & /);
+impl_math_vec3!(impl Add & AddAssign as add & add_assign & +);
+impl_math_vec3!(impl Sub & SubAssign as sub & sub_assign & -);
+impl_math_vec3!(impl Mul & MulAssign as mul & mul_assign & *);
+impl_math_vec3!(impl Div & DivAssign as div & div_assign & /);
 
 impl ops::Neg for &Vector3 {
     type Output = Vector3;
