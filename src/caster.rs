@@ -63,7 +63,7 @@ impl Caster {
                     })
                     .buffer_unordered(self.pixel_samples as usize)
                     .fold(Vector3::fill(0.0), |acc, v| async move { acc + v })
-                    .map(move |v| (buf_idx, (v / self.pixel_samples).to_color()))
+                    .map(move |v| (buf_idx, (v / self.pixel_samples).get_color()))
             })
             .buffer_unordered(self.camera.image_width as usize)
             .collect::<Vec<(u32, Vec<u8>)>>();
@@ -79,11 +79,7 @@ impl Caster {
         bar.finish();
 
         buffer.sort_by(|(a, _), (b, _)| a.cmp(b));
-        let buffer = buffer
-            .into_iter()
-            .map(|v| v.1)
-            .flatten()
-            .collect::<Vec<u8>>();
+        let buffer = buffer.into_iter().flat_map(|v| v.1).collect::<Vec<u8>>();
 
         self.camera.render(buffer, &self.output_file);
     }

@@ -59,7 +59,6 @@ impl Scene {
             stealers.remove(idx);
             let is_running = is_running.clone();
             let objects = objects.clone();
-            let batch_limit = batch_limit;
 
             handlers.push(thread::spawn(move || {
                 while is_running.load(Ordering::Relaxed) {
@@ -116,7 +115,7 @@ impl Drop for Scene {
 }
 
 fn random_scene() -> Vec<HittableRef> {
-    let mut objects = Vec::new();
+    let mut objects = Vec::<HittableRef>::new();
 
     let material_ground = Lambert::new(Vector3::new(0.5, 0.5, 0.5));
     objects.push(Sphere::new(

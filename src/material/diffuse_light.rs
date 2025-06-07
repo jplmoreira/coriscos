@@ -14,6 +14,6 @@ impl DiffuseLight {
 
 impl Material for DiffuseLight {
     fn emit(&self) -> Vector3 {
-        return self.color.clone();
+        self.color.clone()
     }
 }

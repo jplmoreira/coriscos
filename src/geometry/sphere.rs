@@ -9,7 +9,7 @@ use crate::{
     math::Vector3,
 };
 
-use super::{Hittable, HittableRef};
+use super::Hittable;
 
 pub struct Sphere<M: Material> {
     center: Vector3,
@@ -18,7 +18,7 @@ pub struct Sphere<M: Material> {
 }
 
 impl<M: Material> Sphere<M> {
-    pub fn new(center: Vector3, radius: f64, material: M) -> HittableRef {
+    pub fn new(center: Vector3, radius: f64, material: M) -> Box<Self> {
         Box::new(Self {
             center,
             radius,

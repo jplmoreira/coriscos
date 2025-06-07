@@ -19,6 +19,6 @@ pub trait Material: Send + Sync + 'static {
         None
     }
     fn emit(&self) -> Vector3 {
-        return Vector3::fill(0.0);
+        Vector3::fill(0.0)
     }
 }

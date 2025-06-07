@@ -104,7 +104,7 @@ impl Vector3 {
         (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s)
     }
 
-    pub fn to_color(self) -> Vec<u8> {
+    pub fn get_color(self) -> Vec<u8> {
         vec![
             (self.x.clamp(0.0, 1.0).sqrt() * 255.999) as u8,
             (self.y.clamp(0.0, 1.0).sqrt() * 255.999) as u8,
